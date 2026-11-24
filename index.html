@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laporan Unit Barging (Offline & Pencarian)</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- KUMPULAN IKON ---
+    const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>;
+    const IconTrash = () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+    const IconDownload = () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
+    const IconCopy = () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
+    const IconCheckCircle = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    const IconWrench = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H4a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>;
+    const IconClock = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    const IconUserX = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6h12a6 6 0 00-6-6zM21 12h-6" /></svg>;
+    const IconChevronDown = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>;
+    const IconChevronUp = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg>;
+    const IconRefresh = () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
+    const IconAlert = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>;
+    const IconX = () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>;
+    const IconSearch = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
+
+    // --- HELPERS ---
+    const formatDateTimeForInput = (dateObj) => {
+      if (!dateObj) return '';
+      const d = new Date(dateObj);
+      if (isNaN(d.getTime())) return '';
+      const pad = (n) => (n < 10 ? '0' + n : n);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const formatTimeForWA = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    };
+
+    // --- DATA AWAL (SUDAH DIPERBARUI 48 UNIT READY & ADA SHIFT DRIVER) ---
+    const initialUnitsData = [{"id": "1", "unitNo": "001", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "2", "unitNo": "008", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "3", "unitNo": "010", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "4", "unitNo": "018", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "5", "unitNo": "020", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "6", "unitNo": "021", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "7", "unitNo": "023", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "8", "unitNo": "028", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "9", "unitNo": "036", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "10", "unitNo": "038", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "11", "unitNo": "055", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "12", "unitNo": "056", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "13", "unitNo": "063", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "14", "unitNo": "Howo 065", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "15", "unitNo": "100", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "16", "unitNo": "101", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "17", "unitNo": "112", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "18", "unitNo": "113", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "19", "unitNo": "Howo 118", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "20", "unitNo": "122", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "21", "unitNo": "127", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "22", "unitNo": "130", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "23", "unitNo": "133", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "24", "unitNo": "135", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "25", "unitNo": "138", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "26", "unitNo": "151", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "27", "unitNo": "152", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "28", "unitNo": "156", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "29", "unitNo": "157", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "30", "unitNo": "161", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "31", "unitNo": "166", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "32", "unitNo": "171", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "33", "unitNo": "176", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "34", "unitNo": "177", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "35", "unitNo": "178", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "36", "unitNo": "202", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "37", "unitNo": "218", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "38", "unitNo": "238", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "39", "unitNo": "252", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "40", "unitNo": "268", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "41", "unitNo": "271", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "42", "unitNo": "303", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "43", "unitNo": "306", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "44", "unitNo": "308", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "45", "unitNo": "313", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "46", "unitNo": "315", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "47", "unitNo": "317", "status": "Ready", "lokasi": "Site Jety", "keterangan": "", "driverShift1": "", "driverShift2": "", "waktuBreakdown": null, "waktuReady": "2026-11-24T07:00", "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "48", "unitNo": "070", "status": "Maintenance", "lokasi": "", "keterangan": "Retarder (dialihkan ke produksi)", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "49", "unitNo": "155", "status": "Maintenance", "lokasi": "MHR", "keterangan": "Transmisi", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "50", "unitNo": "168", "status": "Maintenance", "lokasi": "Jetty", "keterangan": "Retarder, Lampu hazard, Air Wiper", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "51", "unitNo": "182", "status": "Maintenance", "lokasi": "DBK", "keterangan": "Tyre No.2", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "52", "unitNo": "203", "status": "Maintenance", "lokasi": "Jetty", "keterangan": "Tyre No.5", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "53", "unitNo": "215", "status": "Maintenance", "lokasi": "Tailing 3", "keterangan": "Tyre", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "54", "unitNo": "236", "status": "Maintenance", "lokasi": "Jetty", "keterangan": "Tyre No.9", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "55", "unitNo": "263", "status": "Maintenance", "lokasi": "Jetty", "keterangan": "Tyre No.6", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "56", "unitNo": "270", "status": "Maintenance", "lokasi": "DBK", "keterangan": "Tyre No.2", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}, {"id": "57", "unitNo": "272", "status": "Maintenance", "lokasi": "Jetty", "keterangan": "Tyre No.10", "driverShift1": "", "driverShift2": "", "waktuBreakdown": "2026-11-24T08:00", "waktuReady": null, "ritaseShift1": 0, "ritaseShift2": 0}];
+
+    function App() {
+
+      const [units, setUnits] = useState(() => {
+        const saved = localStorage.getItem('barging_units_html_v14_wa_shifts');
+        const parsed = saved ? JSON.parse(saved) : initialUnitsData;
+        return parsed.map(u => ({
+          ...u,
+          ritaseShift1: Number(u.ritaseShift1 || 0),
+          ritaseShift2: Number(u.ritaseShift2 || 0)
+        }));
+      });
+
+      const [activeMenu, setActiveMenu] = useState('units'); // 'units' | 'ritase'
+      const [ritaseShiftFilter, setRitaseShiftFilter] = useState('all'); // 'all' | 'shift1' | 'shift2'
+      const [includeRitaseInWA, setIncludeRitaseInWA] = useState(true);
+
+      const handleRitaseChange = (id, shiftField, deltaOrVal, isDirect = false) => {
+        setUnits(prev => prev.map(u => {
+          if (u.id !== id) return u;
+          const currentVal = Number(u[shiftField] || 0);
+          const nextVal = isDirect
+            ? Math.max(0, parseInt(deltaOrVal, 10) || 0)
+            : Math.max(0, currentVal + deltaOrVal);
+          return { ...u, [shiftField]: nextVal };
+        }));
+      };
+
+      const getUnitTotalRitase = (u) => {
+        const r1 = Number(u.ritaseShift1 || 0);
+        const r2 = Number(u.ritaseShift2 || 0);
+        if (ritaseShiftFilter === 'shift1') return r1;
+        if (ritaseShiftFilter === 'shift2') return r2;
+        return r1 + r2;
+      };
+
+
+      const [expandedId, setExpandedId] = useState(null);
+      const [waTab, setWaTab] = useState('semua');
+      const [showImportModal, setShowImportModal] = useState(false);
+      const [showResetRitaseModal, setShowResetRitaseModal] = useState(false);
+
+      const handleResetAllRitase = () => {
+        setUnits(prev => prev.map(u => ({
+          ...u,
+          ritaseShift1: 0,
+          ritaseShift2: 0
+        })));
+        setShowResetRitaseModal(false);
+      };
+      const [copied, setCopied] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+
+      const [newUnitNo, setNewUnitNo] = useState('');
+      const [newStatus, setNewStatus] = useState('Maintenance');
+      const [newLokasi, setNewLokasi] = useState('');
+      const [newKeterangan, setNewKeterangan] = useState('');
+      const [newDriver1, setNewDriver1] = useState('');
+      const [newDriver2, setNewDriver2] = useState('');
+
+      useEffect(() => {
+        localStorage.setItem('barging_units_html_v14_wa_shifts', JSON.stringify(units));
+      }, [units]);
+
+      const handleStatusChange = (id, newStatusVal) => {
+        const nowISO = formatDateTimeForInput(new Date());
+        setUnits(prev => prev.map(unit => {
+          if (unit.id === id) {
+            let updatedBD = unit.waktuBreakdown;
+            let updatedReady = unit.waktuReady;
+            let updatedLokasi = unit.lokasi;
+            let updatedKeterangan = unit.keterangan;
+
+            if (newStatusVal === 'Maintenance' && !unit.waktuBreakdown) {
+              updatedBD = nowISO;
+            } else if (newStatusVal === 'Ready') {
+              updatedReady = nowISO;
+              updatedLokasi = ''; 
+              updatedKeterangan = ''; 
+            }
+
+            return {
+              ...unit,
+              status: newStatusVal,
+              waktuBreakdown: updatedBD,
+              waktuReady: updatedReady,
+              lokasi: updatedLokasi,
+              keterangan: updatedKeterangan
+            };
+          }
+          return unit;
+        }));
+      };
+
+      const handleTimeChange = (id, field, value) => {
+        setUnits(prev => prev.map(unit => unit.id === id ? { ...unit, [field]: value || null } : unit));
+      };
+
+      const handleClearTime = (id, field) => {
+        setUnits(prev => prev.map(unit => unit.id === id ? { ...unit, [field]: null } : unit));
+      };
+
+      const handleAddUnit = (e) => {
+        e.preventDefault();
+        if (!newUnitNo.trim()) return;
+
+        const nowISO = formatDateTimeForInput(new Date());
+        const newUnit = {
+          id: Date.now().toString(),
+          unitNo: newUnitNo.trim(),
+          status: newStatus,
+          lokasi: newLokasi.trim(),
+          keterangan: newKeterangan.trim(),
+          driverShift1: newDriver1.trim(),
+          driverShift2: newDriver2.trim(),
+          waktuBreakdown: newStatus === 'Maintenance' ? nowISO : null,
+          waktuReady: newStatus === 'Ready' ? nowISO : null
+        };
+
+        setUnits([newUnit, ...units]);
+        setNewUnitNo(''); setNewLokasi(''); setNewKeterangan(''); setNewDriver1(''); setNewDriver2('');
+      };
+
+      const handleDeleteUnit = (id) => {
+        setUnits(prev => prev.filter(u => u.id !== id));
+      };
+
+      const handleImportPreset = () => {
+        setUnits(initialUnitsData);
+        setShowImportModal(false);
+      };
+
+      const exportCSV = () => {
+        const headers = ["Nama Unit", "Status", "Lokasi", "Keterangan", "Driver Shift 1", "Driver Shift 2", "Ritase Shift 1", "Ritase Shift 2", "Total Ritase", "Waktu Breakdown", "Waktu Ready"];
+        const rows = units.map(u => {
+          const r1 = Number(u.ritaseShift1 || 0);
+          const r2 = Number(u.ritaseShift2 || 0);
+          return [
+            `"DT ${u.unitNo}"`,
+            `"${u.status}"`,
+            `"${u.lokasi || ''}"`,
+            `"${u.keterangan || ''}"`,
+            `"${u.driverShift1 || ''}"`,
+            `"${u.driverShift2 || ''}"`,
+            r1,
+            r2,
+            r1 + r2,
+            `"${u.waktuBreakdown || ''}"`,
+            `"${u.waktuReady || ''}"`
+          ];
+        });
+
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Laporan_Unit_Barging_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      const filteredUnits = units.filter(unit => {
+        const query = searchQuery.toLowerCase();
+        return (
+          unit.unitNo.toLowerCase().includes(query) ||
+          (unit.lokasi && unit.lokasi.toLowerCase().includes(query)) ||
+          (unit.keterangan && unit.keterangan.toLowerCase().includes(query)) ||
+          (unit.driverShift1 && unit.driverShift1.toLowerCase().includes(query)) ||
+          (unit.driverShift2 && unit.driverShift2.toLowerCase().includes(query))
+        );
+      });
+
+      const totalBreakdown = units.filter(u => u.status === 'Maintenance').length;
+      const totalReady = units.filter(u => u.status === 'Ready').length;
+      const totalStandby = units.filter(u => u.status === 'Standby').length;
+      const totalNoDriver = units.filter(u => u.status === 'No Driver').length;
+      const totalRitaseS1 = units.reduce((acc, u) => acc + Number(u.ritaseShift1 || 0), 0);
+      const totalRitaseS2 = units.reduce((acc, u) => acc + Number(u.ritaseShift2 || 0), 0);
+      const totalRitaseAll = totalRitaseS1 + totalRitaseS2;
+      const activeRitaseUnitsCount = units.filter(u => (Number(u.ritaseShift1 || 0) + Number(u.ritaseShift2 || 0)) > 0).length;
+
+
+      const sortUnitsByNo = (list) => {
+        return [...list].sort((a, b) => {
+          return a.unitNo.localeCompare(b.unitNo, undefined, { numeric: true, sensitivity: 'base' });
+        });
+      };
+
+      const generateWAPreview = () => {
+        let header = `*Laporan Unit Barging*\n*${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}*\n\n`;
+        const sortedUnits = sortUnitsByNo(units);
+
+        if (waTab === 'semua') {
+          const readyList = sortedUnits.filter(u => u.status === 'Ready');
+          const bdList = sortedUnits.filter(u => u.status === 'Maintenance');
+          const otherList = sortedUnits.filter(u => u.status !== 'Ready' && u.status !== 'Maintenance');
+
+          header += `*UNIT READY (${readyList.length} UNIT):*\n`;
+          if (readyList.length === 0) {
+            header += `_Tidak ada unit ready._\n`;
+          } else {
+            readyList.forEach((u, index) => {
+              let line = `${index + 1}. DT ${u.unitNo} ✅️`;
+              if (u.lokasi) line += ` 📍${u.lokasi}`;
+              if (u.driverShift1 || u.driverShift2) {
+                line += ` 🧑‍✈️${u.driverShift1 || '-'}/${u.driverShift2 || '-'}`;
+              }
+              if (includeRitaseInWA) {
+                const rTot = Number(u.ritaseShift1 || 0) + Number(u.ritaseShift2 || 0);
+                if (rTot > 0) line += ` 🚛${rTot} rit`;
+              }
+              header += `${line}\n`;
+            });
+          }
+
+          header += `\n*UNIT BREAKDOWN (${bdList.length} UNIT):*\n`;
+          if (bdList.length === 0) {
+            header += `_Tidak ada unit breakdown._\n`;
+          } else {
+            const groupedBD = {};
+            bdList.forEach(u => {
+              const locKey = u.lokasi ? u.lokasi.toUpperCase() : 'LAINNYA / TANPA LOKASI';
+              if (!groupedBD[locKey]) groupedBD[locKey] = [];
+              groupedBD[locKey].push(u);
+            });
+
+            let bdCounter = 1;
+            Object.keys(groupedBD).forEach(loc => {
+              header += `*📍 ${loc}*\n`;
+              groupedBD[loc].forEach(u => {
+                let line = `${bdCounter}. DT ${u.unitNo}`;
+                if (u.keterangan) line += ` : ${u.keterangan}`;
+                if (u.driverShift1 || u.driverShift2) {
+                  line += ` 🧑‍✈️${u.driverShift1 || '-'}/${u.driverShift2 || '-'}`;
+                }
+                line += ` 🛠️`;
+                if (u.waktuBreakdown) {
+                  line += ` (BD: ${formatTimeForWA(u.waktuBreakdown)})`;
+                }
+                header += `${line}\n`;
+                bdCounter++;
+              });
+              header += `\n`;
+            });
+            header = header.replace(/\n$/, '');
+          }
+
+          if (otherList.length > 0) {
+            header += `\n*UNIT STANDBY / NO DRIVER (${otherList.length} UNIT):*\n`;
+            otherList.forEach((u, index) => {
+              let statusEmoji = u.status === 'Standby' ? '⏳' : '❗️';
+              let line = `${index + 1}. DT ${u.unitNo}`;
+              if (u.keterangan) line += ` : ${u.keterangan}`;
+              if (u.lokasi) line += ` 📍${u.lokasi}`;
+              if (u.driverShift1 || u.driverShift2) {
+                line += ` 🧑‍✈️${u.driverShift1 || '-'}/${u.driverShift2 || '-'}`;
+              }
+              line += ` ${statusEmoji}`;
+              header += `${line}\n`;
+            });
+          }
+        } else if (waTab === 'breakdown') {
+          const bdUnits = sortedUnits.filter(u => u.status === 'Maintenance');
+          if (bdUnits.length === 0) {
+            header += `_Tidak ada unit breakdown._\n`;
+          } else {
+            const grouped = {};
+            bdUnits.forEach(u => {
+              const locKey = u.lokasi ? u.lokasi.toUpperCase() : 'LAINNYA / TANPA LOKASI';
+              if (!grouped[locKey]) grouped[locKey] = [];
+              grouped[locKey].push(u);
+            });
+
+            let counter = 1;
+            Object.keys(grouped).forEach(loc => {
+              header += `*📍 ${loc}*\n`;
+              grouped[loc].forEach(u => {
+                let line = `${counter}. DT ${u.unitNo}`;
+                if (u.keterangan) line += ` - ${u.keterangan}`;
+                if (u.driverShift1 || u.driverShift2) {
+                  line += ` 🧑‍✈️${u.driverShift1 || '-'}/${u.driverShift2 || '-'}`;
+                }
+                line += ` 🛠️`;
+                if (u.waktuBreakdown) {
+                  line += ` (BD: ${formatTimeForWA(u.waktuBreakdown)})`;
+                }
+                header += `${line}\n`;
+                counter++;
+              });
+              header += `\n`;
+            });
+          }
+        } else if (waTab === 'ready') {
+          const readyUnits = sortedUnits.filter(u => u.status === 'Ready');
+          if (readyUnits.length === 0) {
+            header += `_Tidak ada unit ready._\n`;
+          } else {
+            readyUnits.forEach((u, i) => {
+              let line = `${i + 1}. DT ${u.unitNo} ✅️`;
+              if (u.lokasi) line += ` 📍${u.lokasi}`;
+              if (u.driverShift1 || u.driverShift2) {
+                  line += ` 🧑‍✈️${u.driverShift1 || '-'}/${u.driverShift2 || '-'}`;
+              }
+              header += `${line}\n`;
+            });
+          }
+        } else if (waTab === 'ritase s1') {
+          header += `*LAPORAN RITASE SHIFT 1:*\n`;
+          let r1Counter = 1;
+          let sumS1 = 0;
+          sortedUnits.forEach((u) => {
+            const r1 = Number(u.ritaseShift1 || 0);
+            if (r1 > 0) {
+              header += `${r1Counter}. DT ${u.unitNo} : ${r1} rit\n`;
+              sumS1 += r1;
+              r1Counter++;
+            }
+          });
+          if (r1Counter === 1) {
+            header += `_Belum ada ritase Shift 1._\n`;
+          }
+          header += `\n*Total ritase Shift 1:* ${sumS1} rit`;
+          return header;
+        } else if (waTab === 'ritase s2') {
+          header += `*LAPORAN RITASE SHIFT 2:*\n`;
+          let r2Counter = 1;
+          let sumS2 = 0;
+          sortedUnits.forEach((u) => {
+            const r2 = Number(u.ritaseShift2 || 0);
+            if (r2 > 0) {
+              header += `${r2Counter}. DT ${u.unitNo} : ${r2} rit\n`;
+              sumS2 += r2;
+              r2Counter++;
+            }
+          });
+          if (r2Counter === 1) {
+            header += `_Belum ada ritase Shift 2._\n`;
+          }
+          header += `\n*Total ritase Shift 2:* ${sumS2} rit`;
+          return header;
+        }
+
+        header += `\n*Total unit breakdown:* ${totalBreakdown} unit\n`;
+        header += `*Total ready:* ${totalReady} unit\n`;
+        if (includeRitaseInWA) {
+          header += `*Total ritase:* ${totalRitaseAll} rit (S1: ${totalRitaseS1} | S2: ${totalRitaseS2})\n`;
+        }
+        header += `\n`;
+        header += `*KET*\n📍 Lokasi\n✅️ Ready\n🛠️ Maintenance\n⏳ Standby\n❗️ No Driver`;
+
+        return header;
+      };
+
+      const fallbackCopy = (text) => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px"; 
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          alert("Browser memblokir fitur salin otomatis. Silakan salin manual.");
+        }
+        document.body.removeChild(textArea);
+      };
+
+      const copyToClipboard = () => {
+        const text = generateWAPreview();
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text)
+            .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+            .catch(() => fallbackCopy(text));
+        } else {
+          fallbackCopy(text);
+        }
+      };
+
+      return (
+        <div className="p-3 sm:p-6">
+          <div className="max-w-4xl mx-auto space-y-5">
+            
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-amber-400 flex items-center gap-2">
+                  <span>📊</span> Laporan Unit Barging
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-400">Monitoring Real-Time Fleet & Operational Units</p>
+              </div>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button onClick={() => setShowImportModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg border border-slate-600 transition">
+                  <IconRefresh /> Reset Data
+                </button>
+                <button onClick={exportCSV} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3 py-2 rounded-lg transition shadow">
+                  <IconDownload /> Ekspor CSV
+                </button>
+              </div>
+            </div>
+
+
+            {/* Menu Navigasi Utama */}
+            <div className="flex gap-2 bg-slate-800 p-1.5 rounded-xl border border-slate-700">
+              <button
+                onClick={() => setActiveMenu('units')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 ${activeMenu === 'units' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-slate-700/60'}`}
+              >
+                <span>🚛</span> Daftar Unit & Status
+              </button>
+              <button
+                onClick={() => setActiveMenu('ritase')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 ${activeMenu === 'ritase' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-slate-700/60'}`}
+              >
+                <span>🔄</span> Menu Ritase ({totalRitaseAll} Rit)
+              </button>
+            </div>
+
+            {/* Rekap */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400"><IconCheckCircle /></div>
+                <div><div className="text-xs text-slate-400 font-medium">Ready</div><div className="text-lg font-bold text-emerald-400">{totalReady} Unit</div></div>
+              </div>
+              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-400"><IconWrench /></div>
+                <div><div className="text-xs text-slate-400 font-medium">Breakdown</div><div className="text-lg font-bold text-rose-400">{totalBreakdown} Unit</div></div>
+              </div>
+              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400"><IconClock /></div>
+                <div><div className="text-xs text-slate-400 font-medium">Standby</div><div className="text-lg font-bold text-amber-400">{totalStandby} Unit</div></div>
+              </div>
+              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400"><IconUserX /></div>
+                <div><div className="text-xs text-slate-400 font-medium">No Driver</div><div className="text-lg font-bold text-purple-400">{totalNoDriver} Unit</div></div>
+              </div>
+            </div>
+
+
+            {activeMenu === 'ritase' ? (
+              <div className="space-y-4">
+                {/* Ringkasan Ritase */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+                    <div className="text-xs text-slate-400">Total Ritase (S1 + S2)</div>
+                    <div className="text-xl font-bold text-amber-400 mt-0.5">{totalRitaseAll} Rit</div>
+                  </div>
+                  <div className="bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+                    <div className="text-xs text-slate-400">Ritase Shift 1</div>
+                    <div className="text-xl font-bold text-sky-400 mt-0.5">{totalRitaseS1} Rit</div>
+                  </div>
+                  <div className="bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+                    <div className="text-xs text-slate-400">Ritase Shift 2</div>
+                    <div className="text-xl font-bold text-indigo-400 mt-0.5">{totalRitaseS2} Rit</div>
+                  </div>
+                  <div className="bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+                    <div className="text-xs text-slate-400">Unit Beritase</div>
+                    <div className="text-xl font-bold text-emerald-400 mt-0.5">{activeRitaseUnitsCount} / {units.length}</div>
+                  </div>
+                </div>
+
+                {/* Filter Shift & Pencarian Ritase */}
+                <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-sm">
+                  <div className="p-3.5 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h2 className="text-sm font-semibold text-slate-200">Input & Monitoring Ritase per Unit</h2>
+                        <button
+                          type="button"
+                          onClick={() => setShowResetRitaseModal(true)}
+                          className="flex items-center gap-1 text-[11px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-lg font-medium transition"
+                        >
+                          <IconTrash /> Hapus All Ritase
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-400">Gunakan tombol +/- atau ketik jumlah ritase langsung per shift</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 text-xs">
+                        <button onClick={() => setRitaseShiftFilter('all')} className={`px-2.5 py-1 rounded transition ${ritaseShiftFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}>Semua</button>
+                        <button onClick={() => setRitaseShiftFilter('shift1')} className={`px-2.5 py-1 rounded transition ${ritaseShiftFilter === 'shift1' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}>Shift 1</button>
+                        <button onClick={() => setRitaseShiftFilter('shift2')} className={`px-2.5 py-1 rounded transition ${ritaseShiftFilter === 'shift2' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}>Shift 2</button>
+                      </div>
+                      <div className="relative flex-1 sm:w-52">
+                        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400"><IconSearch /></div>
+                        <input type="text" placeholder="Cari unit / lokasi..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg py-1.5 pl-8 pr-3 text-xs text-slate-100 focus:outline-none focus:border-amber-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-slate-700/60 max-h-[520px] overflow-y-auto">
+                    {sortUnitsByNo(filteredUnits).length === 0 ? (
+                      <div className="p-8 text-center text-xs text-slate-400">Tidak ada unit ditemukan.</div>
+                    ) : (
+                      sortUnitsByNo(filteredUnits).map((unit) => {
+                        const r1 = Number(unit.ritaseShift1 || 0);
+                        const r2 = Number(unit.ritaseShift2 || 0);
+                        const shownTotal = getUnitTotalRitase(unit);
+                        return (
+                          <div key={unit.id} className="p-3 bg-slate-800 hover:bg-slate-750/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-100 text-sm">DT {unit.unitNo}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${unit.status === 'Ready' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                                  {unit.status === 'Ready' ? 'Ready' : unit.status}
+                                </span>
+                                {unit.lokasi && <span className="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded-full">📍 {unit.lokasi}</span>}
+                              </div>
+                              {(unit.driverShift1 || unit.driverShift2) && (
+                                <div className="text-[11px] text-slate-400 mt-1">🧑‍✈️ S1: {unit.driverShift1 || '-'} • S2: {unit.driverShift2 || '-'}</div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0">
+                              {(ritaseShiftFilter === 'all' || ritaseShiftFilter === 'shift1') && (
+                                <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+                                  <span className="text-[10px] text-sky-400 font-semibold mr-0.5">S1</span>
+                                  <button type="button" onClick={() => handleRitaseChange(unit.id, 'ritaseShift1', -1)} className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center justify-center">-</button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={r1}
+                                    onChange={(e) => handleRitaseChange(unit.id, 'ritaseShift1', e.target.value, true)}
+                                    className="w-9 bg-transparent text-center font-bold text-slate-100 text-xs focus:outline-none"
+                                  />
+                                  <button type="button" onClick={() => handleRitaseChange(unit.id, 'ritaseShift1', 1)} className="w-5 h-5 rounded bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold flex items-center justify-center">+</button>
+                                </div>
+                              )}
+
+                              {(ritaseShiftFilter === 'all' || ritaseShiftFilter === 'shift2') && (
+                                <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+                                  <span className="text-[10px] text-indigo-400 font-semibold mr-0.5">S2</span>
+                                  <button type="button" onClick={() => handleRitaseChange(unit.id, 'ritaseShift2', -1)} className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center justify-center">-</button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={r2}
+                                    onChange={(e) => handleRitaseChange(unit.id, 'ritaseShift2', e.target.value, true)}
+                                    className="w-9 bg-transparent text-center font-bold text-slate-100 text-xs focus:outline-none"
+                                  />
+                                  <button type="button" onClick={() => handleRitaseChange(unit.id, 'ritaseShift2', 1)} className="w-5 h-5 rounded bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold flex items-center justify-center">+</button>
+                                </div>
+                              )}
+
+                              <div className="bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold px-2.5 py-1.5 rounded-lg min-w-[62px] text-center">
+                                {shownTotal} Rit
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <React.Fragment>
+
+            {/* Tambah Unit */}
+            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+              <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><IconPlus /> Tambah Unit Baru</h2>
+              <form onSubmit={handleAddUnit} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Nomor Unit</label>
+                    <div className="flex rounded-lg overflow-hidden border border-slate-600 focus-within:border-amber-400">
+                      <span className="bg-slate-700 text-slate-300 text-xs px-2.5 py-2 flex items-center font-bold border-r border-slate-600">DT</span>
+                      <input type="text" placeholder="misal: 178" value={newUnitNo} onChange={(e) => setNewUnitNo(e.target.value)} className="w-full bg-slate-900 text-slate-100 text-xs p-2 focus:outline-none" required />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Status Awal</label>
+                    <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg text-xs p-2 text-slate-100 focus:outline-none focus:border-amber-400">
+                      <option value="Ready">Ready ✅️</option>
+                      <option value="Maintenance">Maintenance 🛠️</option>
+                      <option value="Standby">Standby ⏳</option>
+                      <option value="No Driver">No Driver ❗️</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Driver Shift 1</label>
+                    <input type="text" placeholder="Nama driver..." value={newDriver1} onChange={(e) => setNewDriver1(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg text-xs p-2 text-slate-100 focus:outline-none focus:border-amber-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Driver Shift 2</label>
+                    <input type="text" placeholder="Nama driver..." value={newDriver2} onChange={(e) => setNewDriver2(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg text-xs p-2 text-slate-100 focus:outline-none focus:border-amber-400" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Lokasi</label>
+                    <input type="text" placeholder="misal: Jety / DBK" value={newLokasi} onChange={(e) => setNewLokasi(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg text-xs p-2 text-slate-100 focus:outline-none focus:border-amber-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Keterangan Kendala</label>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="misal: Tyre bocor" value={newKeterangan} onChange={(e) => setNewKeterangan(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg text-xs p-2 text-slate-100 focus:outline-none focus:border-amber-400" />
+                      <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-2 rounded-lg text-xs transition flex items-center gap-1 shrink-0"><IconPlus /> Tambah</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* List */}
+            <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
+              <div className="p-3.5 border-b border-slate-700 bg-slate-800/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-200">Daftar Unit ({filteredUnits.length})</h2>
+                  <span className="text-xs text-slate-400">Klik baris untuk edit rincian</span>
+                </div>
+                <div className="relative w-full sm:w-auto">
+                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400"><IconSearch /></div>
+                  <input type="text" placeholder="Cari unit, nama, lokasi..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full sm:w-64 bg-slate-900 border border-slate-600 rounded-lg py-1.5 pl-8 pr-3 text-xs text-slate-100 focus:outline-none focus:border-amber-400 transition" />
+                </div>
+              </div>
+
+              <div className="divide-y divide-slate-700/60 max-h-[500px] overflow-y-auto">
+                {filteredUnits.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">Tidak ada unit ditemukan.</div>
+                ) : (
+                  filteredUnits.map((unit) => {
+                    const isExpanded = expandedId === unit.id;
+                    return (
+                      <div key={unit.id} className="bg-slate-800 hover:bg-slate-750 transition">
+                        <div onClick={() => setExpandedId(isExpanded ? null : unit.id)} className="p-3 flex items-center justify-between cursor-pointer select-none text-xs">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-100 truncate text-sm">DT {unit.unitNo}</span>
+                                {unit.lokasi && <span className="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded-full border border-slate-600 shrink-0">📍 {unit.lokasi}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-400">
+                                {(unit.driverShift1 || unit.driverShift2) && (
+                                    <span className="text-[11px] bg-slate-900 px-1.5 py-0.5 rounded">🧑‍✈️ {unit.driverShift1 || '-'}/{unit.driverShift2 || '-'}</span>
+                                )}
+                                {unit.keterangan && <span className="truncate max-w-[200px]">• {unit.keterangan}</span>}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {unit.status === 'Ready' && <span className="bg-emerald-500/10 text-emerald-400 font-medium px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-500/20">Ready ✅️</span>}
+                            {unit.status === 'Maintenance' && <span className="bg-rose-500/10 text-rose-400 font-medium px-2.5 py-0.5 rounded-full text-[11px] border border-rose-500/20">Maintenance 🛠️</span>}
+                            {unit.status === 'Standby' && <span className="bg-amber-500/10 text-amber-400 font-medium px-2.5 py-0.5 rounded-full text-[11px] border border-amber-500/20">Standby ⏳</span>}
+                            {unit.status === 'No Driver' && <span className="bg-purple-500/10 text-purple-400 font-medium px-2.5 py-0.5 rounded-full text-[11px] border border-purple-500/20">No Driver ❗️</span>}
+                            {isExpanded ? <IconChevronUp /> : <IconChevronDown />}
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="p-3.5 bg-slate-850 border-t border-slate-700/50 space-y-3 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-slate-400 mb-1 font-medium">Ubah Status Unit</label>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  {['Ready', 'Maintenance', 'Standby', 'No Driver'].map((st) => (
+                                    <button key={st} onClick={() => handleStatusChange(unit.id, st)} className={`px-2.5 py-1.5 rounded-md text-xs font-medium border transition ${unit.status === st ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold' : 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-650'}`}>{st}</button>
+                                  ))}
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-slate-400 mb-1">Driver Shift 1</label>
+                                    <input type="text" value={unit.driverShift1 || ''} onChange={(e) => setUnits(units.map(u => u.id === unit.id ? { ...u, driverShift1: e.target.value } : u))} className="w-full bg-slate-900 border border-slate-600 rounded px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-amber-400" />
+                                  </div>
+                                  <div>
+                                    <label className="block text-slate-400 mb-1">Driver Shift 2</label>
+                                    <input type="text" value={unit.driverShift2 || ''} onChange={(e) => setUnits(units.map(u => u.id === unit.id ? { ...u, driverShift2: e.target.value } : u))} className="w-full bg-slate-900 border border-slate-600 rounded px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-amber-400" />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="block text-slate-400 mb-1">Lokasi</label>
+                                  <input type="text" value={unit.lokasi || ''} onChange={(e) => setUnits(units.map(u => u.id === unit.id ? { ...u, lokasi: e.target.value } : u))} className="w-full bg-slate-900 border border-slate-600 rounded px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-amber-400" />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-400 mb-1">Keterangan Kendala</label>
+                                  <input type="text" value={unit.keterangan || ''} onChange={(e) => setUnits(units.map(u => u.id === unit.id ? { ...u, keterangan: e.target.value } : u))} className="w-full bg-slate-900 border border-slate-600 rounded px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-amber-400" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 pt-1">
+                                    <div>
+                                        <div className="flex items-center justify-between text-slate-400 mb-1">
+                                            <span>Waktu BD</span>
+                                            {unit.waktuBreakdown && <button onClick={() => handleClearTime(unit.id, 'waktuBreakdown')} className="text-rose-400 hover:underline flex items-center text-[10px]"><IconX /></button>}
+                                        </div>
+                                        <input type="datetime-local" value={unit.waktuBreakdown || ''} onChange={(e) => handleTimeChange(unit.id, 'waktuBreakdown', e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded px-1.5 py-1 text-slate-100 text-[10px] focus:outline-none focus:border-amber-400" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center justify-between text-slate-400 mb-1">
+                                            <span>Waktu Ready</span>
+                                            {unit.waktuReady && <button onClick={() => handleClearTime(unit.id, 'waktuReady')} className="text-rose-400 hover:underline flex items-center text-[10px]"><IconX /></button>}
+                                        </div>
+                                        <input type="datetime-local" value={unit.waktuReady || ''} onChange={(e) => handleTimeChange(unit.id, 'waktuReady', e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded px-1.5 py-1 text-slate-100 text-[10px] focus:outline-none focus:border-amber-400" />
+                                    </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end pt-2 border-t border-slate-700/40">
+                              <button onClick={() => handleDeleteUnit(unit.id)} className="text-rose-400 hover:text-rose-300 flex items-center gap-1 text-xs py-1 px-2 rounded hover:bg-rose-500/10 transition"><IconTrash /> Hapus Unit Ini</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+              </React.Fragment>
+            )}
+
+            {/* WA Output */}
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2"><span>💬</span> Pratinjau Teks WhatsApp</h2>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-700">
+                    <input type="checkbox" checked={includeRitaseInWA} onChange={(e) => setIncludeRitaseInWA(e.target.checked)} className="accent-amber-500 rounded" />
+                    <span>Sertakan Ritase</span>
+                  </label>
+                </div>
+                <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 gap-1 w-full sm:w-auto">
+                  {['semua', 'breakdown', 'ready', 'ritase s1', 'ritase s2'].map(tab => (
+                    <button key={tab} onClick={() => setWaTab(tab)} className={`flex-1 sm:flex-none px-3 py-1 rounded text-xs transition capitalize ${waTab === tab ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-250'}`}>{tab}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="relative">
+                <pre className="bg-slate-950 p-3.5 rounded-lg border border-slate-700/80 text-xs font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">{generateWAPreview()}</pre>
+                <button onClick={copyToClipboard} className="absolute top-2.5 right-2.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition shadow"><IconCopy />{copied ? 'Tersalin!' : 'Salin Teks'}</button>
+              </div>
+            </div>
+
+          </div>
+
+          {showImportModal && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-800 border border-slate-700 p-5 rounded-xl max-w-sm w-full space-y-4 shadow-xl">
+                <div className="flex items-center gap-3 text-amber-400"><IconAlert /><h3 className="font-bold text-sm text-slate-100">Reset ke Data Preset?</h3></div>
+                <p className="text-xs text-slate-300 leading-relaxed">Tindakan ini akan mengembalikan seluruh daftar unit ke data awal. Data editan saat ini akan tertimpa.</p>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button onClick={() => setShowImportModal(false)} className="px-3 py-1.5 rounded-lg text-xs bg-slate-700 hover:bg-slate-600 text-slate-200">Batal</button>
+                  <button onClick={handleImportPreset} className="px-3 py-1.5 rounded-lg text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">Ya, Reset Data</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showResetRitaseModal && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-800 border border-slate-700 p-5 rounded-xl max-w-sm w-full space-y-4 shadow-xl">
+                <div className="flex items-center gap-3 text-rose-400"><IconAlert /><h3 className="font-bold text-sm text-slate-100">Hapus All Ritase Semua Unit?</h3></div>
+                <p className="text-xs text-slate-300 leading-relaxed">Seluruh data ritase Shift 1 dan Shift 2 pada semua unit akan direset menjadi <span className="font-bold text-amber-400">0</span>. Status dan data unit lainnya tidak berubah.</p>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button onClick={() => setShowResetRitaseModal(false)} className="px-3 py-1.5 rounded-lg text-xs bg-slate-700 hover:bg-slate-600 text-slate-200">Batal</button>
+                  <button onClick={handleResetAllRitase} className="px-3 py-1.5 rounded-lg text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold">Ya, Hapus Semua</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
